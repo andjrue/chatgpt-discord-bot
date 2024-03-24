@@ -12,8 +12,12 @@ import (
 * Message Sending: DONE
 	Need the bot to send a message when someone joins a chat channel
 
-* Bot needs to join a voice channel whenever someone joins one
+* Bot needs to join a voice channel whenever someone joins one: DONE
 	Will still need to send the message as well
+
+* Small issue with above, the bot never actually leaves the channel.
+	Need to find a way to check how many members are in the channel at any given time.
+	When it's <= 1, the bot can leave/turn off?
 
 * Need to connect to OpenAI API:
 	The idea is that when someone joins a voice channel, the bot follows and will text-to-speech
@@ -55,6 +59,20 @@ func userHasJoinedVoice(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 	}
 }
 
+func botJoinChannel(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
+	if v.UserID == s.State.User.ID {
+		return
+	}
+
+	if v.ChannelID != "" {
+		_, err := s.ChannelVoiceJoin(v.GuildID, v.ChannelID, false, true)
+		if err != nil {
+			fmt.Println("Error joining voice channel", err)
+		}
+	}
+
+}
+
 func main() {
 
 	err := godotenv.Load()
@@ -71,6 +89,7 @@ func main() {
 	}
 
 	sess.AddHandler(userHasJoinedVoice)
+	sess.AddHandler(botJoinChannel)
 
 	err = sess.Open()
 	if err != nil {
