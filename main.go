@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
-	"os"
 )
 
 /* TO-DO's
@@ -61,6 +62,10 @@ func botJoinChannel(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 			fmt.Println("Error joining voice channel", err)
 		}
 	}
+}
+
+func playMessage(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
+	// Return Something
 }
 
 func main() {
