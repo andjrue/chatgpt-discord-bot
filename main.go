@@ -1,24 +1,27 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 )
 
-/* TO-DO's
+func uploadToS3(sess *session.Session, bucket, key, content string) error {
+	svc := s3.New(sess)
 
-* I think I figured out a better way to do this. We could set up an S3 bucket to store the .mp3's, then include a username
-  lookup to see if that user has an existing file. If they do, we play the file. If they don't, we make an API call and
-  have a new one created.
-
-* This is good for a few reasons, the main of which being cutting down on cost. OpenAI's API isn't initially expensive,
-  but that could add up quickly over time. I also don't have any plans of making this public, so there would only be 6ish
-  calls ever made.
-
-*/
+	_, err := svc.PutObject(&s3.PutObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+		Body:   bytes.NewReader([]byte(content)),
+	})
+	return err
+}
 
 func userHasJoinedVoice(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 	err := godotenv.Load()
@@ -48,6 +51,25 @@ func userHasJoinedVoice(s *discordgo.Session, v *discordgo.VoiceStateUpdate) {
 			fmt.Println("Error sending message", err)
 			return
 		}
+
+		s3Session, err := session.NewSession(&aws.Config{
+			Region: aws.String(os.Getenv("AWS_REGION")),
+		})
+		if err != nil {
+			fmt.Println("S3 error", err)
+			return
+		}
+		bucket := os.Getenv("S3_BUCKET")
+		key := fmt.Sprintf("text_files/%s-2.txt", user.Username)
+		content := user.Username
+
+		err = uploadToS3(s3Session, bucket, key, content)
+		if err != nil {
+			fmt.Println("Error uploading to S3\n", err)
+			return
+		}
+
+		fmt.Println("Message uploaded to S3")
 	}
 }
 
